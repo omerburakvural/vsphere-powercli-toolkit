@@ -1,0 +1,31 @@
+Function VMRemove ($VMName){
+# param ($VMName)
+
+$VM = Get-VM -Name $VMName
+
+if (!$VM) {
+	 "error, VM not found "
+} else {
+	 $PowerState = $null
+	 $PowerState = $VM.PowerState
+	 if ($PowerState -eq "PoweredOn") {
+		  "info, Server is powered on, trying to power off"
+		  $morTask = $VM.ExtensionData.PowerOffVM_Task()
+		  $vimTask = Get-Task -Id ("Task-{0}" -f $morTask.Value)
+		  $vimTask.ExtensionData.waitForTask($morTask)
+		  if ($vimTask.State -eq "Success") {
+				"info, Successfully powered off"
+		  }
+	 }
+	 "info, Server is powered off, trying to delete from disk"
+	 $morTask = $VM.ExtensionData.Destroy_Task()
+	 $vimTask = Get-Task -Id ("Task-{0}" -f $morTask.Value)
+	 $vimTask.ExtensionData.waitForTask($morTask)
+	 $vimTask = Get-Task -Id ("Task-{0}" -f $morTask.Value)
+	 
+	 Write-Host $vimTask.State
+	 if ($vimTask.State -eq "Success") {
+		"info, Successfully deleted from disk"
+	}
+}
+}
